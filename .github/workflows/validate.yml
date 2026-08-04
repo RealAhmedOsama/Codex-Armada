@@ -1,0 +1,92 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Validate repository
+        run: python scripts/validate_repository.py
+
+      - name: Run automated tests
+        run: python -m unittest discover -s tests -v
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+
+  package:
+    name: Package and archive smoke tests
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+
+      - name: Verify wheel and release archives
+        run: >-
+          python scripts/verify_release.py
+          --artifact-dir "${{ runner.temp }}/codex-armada-verification"
+          --results "${{ runner.temp }}/TEST-RESULTS.txt"
+
+      - name: Upload verification evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-verification
+          path: |
+            ${{ runner.temp }}/codex-armada-verification
+            ${{ runner.temp }}/TEST-RESULTS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  upstream:
+    name: Pinned Luna Forge upstream
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+
+      - name: Fetch, validate, install, and verify pinned source
+        run: python scripts/verify_upstream.py
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
