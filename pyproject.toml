@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-armada"
+version = "1.0.0"
+description = "Evidence-driven, cost-aware model orchestration for Codex CLI."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Ahmed Osama"}]
+keywords = [
+  "codex", "openai", "agents", "orchestration", "luna-forge",
+  "software-engineering", "developer-tools", "cost-optimization"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Quality Assurance"
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "mypy>=1.11",
+  "pytest>=8.0",
+  "ruff>=0.6"
+]
+
+[project.scripts]
+codex-armada = "codex_armada.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/RealAhmedOsama/Codex-Armada"
+Documentation = "https://github.com/RealAhmedOsama/Codex-Armada#readme"
+Issues = "https://github.com/RealAhmedOsama/Codex-Armada/issues"
+Source = "https://github.com/RealAhmedOsama/Codex-Armada"
+"Luna Forge" = "https://github.com/RealAhmedOsama/Luna-Forge"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+codex_armada = [
+  "py.typed",
+  "resources/*.toml",
+  "resources/schemas/*.json",
+  "resources/prompts/*.md"
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
