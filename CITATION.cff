@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use Codex Armada in research or tooling, please cite this software."
+title: "Codex Armada"
+type: software
+authors:
+  - family-names: "Osama"
+    given-names: "Ahmed"
+repository-code: "https://github.com/RealAhmedOsama/Codex-Armada"
+url: "https://github.com/RealAhmedOsama/Codex-Armada"
+license: MIT
+version: 1.0.0
+date-released: 2026-08-05
+keywords:
+  - Codex
+  - agent orchestration
+  - software engineering
+  - cost optimization
+  - evidence-driven development
