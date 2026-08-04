@@ -1,0 +1,227 @@
+version = 1
+profile = "balanced"
+language = "en"
+report_language = "en"
+codex_binary = "codex"
+commit_per_task = true
+use_isolated_worktrees = true
+require_clean_tree = true
+keep_failed_worktrees = true
+store_prompts = false
+ignore_user_config = false
+max_corrections = 1
+command_timeout_seconds = 3600
+verification_timeout_seconds = 1800
+attestation_required_from = "critical"
+default_budget_credits = 250.0
+planner_model = "gpt-5.6-sol"
+planner_effort = "high"
+reviewer_model = "gpt-5.6-sol"
+reviewer_effort = "high"
+
+protected_paths = [
+  ".git/**",
+  ".codex-armada/**",
+  ".codex/**",
+  ".agents/**",
+  ".luna-forge-backups/**",
+  ".codex-armada.toml",
+  "AGENTS.md",
+  "**/AGENTS.md",
+  ".env",
+  ".env.*",
+  "**/*.pem",
+  "**/*.key",
+  "**/*.pfx",
+  "**/*.p12",
+  "**/*secret*",
+  "**/*credential*",
+  "**/id_rsa*"
+]
+
+production_paths = [
+  "**/production/**",
+  "**/deploy/**",
+  "**/deployment/**",
+  "**/terraform/**",
+  "**/ansible/**",
+  "**/pulumi/**",
+  "docker-compose.prod*.yml",
+  "docker-compose.production*.yml",
+  "k8s/**",
+  "kubernetes/**"
+]
+
+allowed_verification_tools = [
+  "git", "dotnet", "python", "python3", "py", "pytest",
+  "ruff", "mypy", "npm", "pnpm", "yarn", "bun",
+  "cargo", "go", "mvn", "mvnw", "gradle", "gradlew"
+]
+
+[models]
+luna = "gpt-5.6-luna"
+terra = "gpt-5.6-terra"
+sol = "gpt-5.6-sol"
+
+[luna_forge]
+enabled = true
+repository = "https://github.com/RealAhmedOsama/Luna-Forge.git"
+ref = "ff37273ba761195ef5ab338d2e90ef3408ce8d8c"
+expected_commit = "ff37273ba761195ef5ab338d2e90ef3408ce8d8c"
+required_version = "2.2.1"
+auto_fetch = true
+auto_install = true
+install_scope = "project"
+strict_integrity = true
+allow_non_github_source = false
+cache_dir = ""
+skill_name = "luna-forge"
+agent_name = "luna_worker"
+default_effort = "high"
+invoke_for_aliases = ["luna"]
+
+[profiles.economy]
+low_worker = "luna"
+medium_worker = "luna"
+high_worker = "terra"
+critical_worker = "sol"
+low_effort = "high"
+medium_effort = "high"
+high_effort = "high"
+critical_effort = "xhigh"
+final_review_from = "critical"
+plan_review_from = "critical"
+approval_from = "critical"
+
+[profiles.balanced]
+low_worker = "luna"
+medium_worker = "terra"
+high_worker = "terra"
+critical_worker = "sol"
+low_effort = "high"
+medium_effort = "high"
+high_effort = "xhigh"
+critical_effort = "xhigh"
+final_review_from = "high"
+plan_review_from = "critical"
+approval_from = "critical"
+
+[profiles.quality]
+low_worker = "terra"
+medium_worker = "terra"
+high_worker = "sol"
+critical_worker = "sol"
+low_effort = "medium"
+medium_effort = "high"
+high_effort = "high"
+critical_effort = "max"
+final_review_from = "medium"
+plan_review_from = "high"
+approval_from = "critical"
+
+[profiles.critical]
+low_worker = "sol"
+medium_worker = "sol"
+high_worker = "sol"
+critical_worker = "sol"
+low_effort = "high"
+medium_effort = "high"
+high_effort = "xhigh"
+critical_effort = "max"
+final_review_from = "low"
+plan_review_from = "medium"
+approval_from = "high"
+
+# Official Codex credit rates per 1M tokens, reviewed 2026-08-05.
+[credit_rates."gpt-5.6-luna"]
+input_per_million = 25.0
+cached_input_per_million = 2.5
+output_per_million = 150.0
+typical_task_credits = 3.0
+
+[credit_rates."gpt-5.6-terra"]
+input_per_million = 62.5
+cached_input_per_million = 6.25
+output_per_million = 375.0
+typical_task_credits = 7.0
+
+[credit_rates."gpt-5.6-sol"]
+input_per_million = 125.0
+cached_input_per_million = 12.5
+output_per_million = 750.0
+typical_task_credits = 14.0
+
+[[risk_rules]]
+pattern = "**/Migrations/**"
+risk = "critical"
+reason = "Database migration"
+
+[[risk_rules]]
+pattern = "**/*Migration*"
+risk = "critical"
+reason = "Database migration"
+
+[[risk_rules]]
+pattern = "**/Billing/**"
+risk = "critical"
+reason = "Billing and financial state"
+
+[[risk_rules]]
+pattern = "**/Payments/**"
+risk = "critical"
+reason = "Payment processing"
+
+[[risk_rules]]
+pattern = "**/Wallets/**"
+risk = "critical"
+reason = "Wallet or ledger state"
+
+[[risk_rules]]
+pattern = "**/Identity/**"
+risk = "high"
+reason = "Identity and authentication"
+
+[[risk_rules]]
+pattern = "**/Auth/**"
+risk = "high"
+reason = "Authentication or authorization"
+
+[[risk_rules]]
+pattern = "**/Security/**"
+risk = "high"
+reason = "Security-sensitive code"
+
+[[risk_rules]]
+pattern = "**/Tenancy/**"
+risk = "high"
+reason = "Tenant isolation"
+
+[[risk_rules]]
+pattern = ".github/workflows/**"
+risk = "high"
+reason = "CI/CD workflow"
+
+[[risk_rules]]
+pattern = "**/Dockerfile*"
+risk = "high"
+reason = "Container build configuration"
+
+[[risk_rules]]
+pattern = "**/docs/**"
+risk = "low"
+reason = "Documentation"
+
+[[risk_rules]]
+pattern = "docs/**"
+risk = "low"
+reason = "Documentation"
+
+[[risk_rules]]
+pattern = "**/Tests/**"
+risk = "low"
+reason = "Tests"
+
+[[risk_rules]]
+pattern = "tests/**"
+risk = "low"
+reason = "Tests"

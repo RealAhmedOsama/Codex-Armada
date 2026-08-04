@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "reason", "findings", "largest_risk"],
+  "properties": {
+    "verdict": {"enum": ["proceed", "change", "stop"]},
+    "reason": {"type": "string"},
+    "findings": {"type": "array", "items": {"type": "string"}},
+    "largest_risk": {"type": "string"}
+  }
+}
