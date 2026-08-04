@@ -1,0 +1,15 @@
+version = 1
+profile = "balanced"
+default_budget_credits = 200.0
+attestation_required_from = "high"
+
+# Project rules add to Codex Armada's packaged safety defaults.
+[[risk_rules]]
+pattern = "src/Payments/**"
+risk = "critical"
+reason = "Payment authorization and financial state"
+
+[[risk_rules]]
+pattern = "infrastructure/**"
+risk = "high"
+reason = "Infrastructure and deployment-adjacent configuration"

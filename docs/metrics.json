@@ -1,0 +1,32 @@
+{
+  "automated_test_cases": 65,
+  "cli_commands": 14,
+  "host_families": [
+    "Linux",
+    "macOS",
+    "Windows"
+  ],
+  "json_schemas": 5,
+  "luna_equal_token_credit_reduction_vs_sol_percent": 80.0,
+  "luna_forge_commit": "ff37273ba761195ef5ab338d2e90ef3408ce8d8c",
+  "luna_forge_version": "2.2.1",
+  "model_aliases": 3,
+  "production_path_patterns": 10,
+  "project": "codex-armada",
+  "prompt_templates": 10,
+  "protected_path_patterns": 17,
+  "python_source_lines_nonblank": 5177,
+  "python_source_lines_physical": 5775,
+  "python_source_modules": 33,
+  "python_versions": [
+    "3.11",
+    "3.12",
+    "3.13"
+  ],
+  "risk_rules": 15,
+  "routing_profiles": 4,
+  "runtime_dependencies": 0,
+  "terra_equal_token_credit_reduction_vs_sol_percent": 50.0,
+  "verification_tools": 18,
+  "version": "1.0.0"
+}
