@@ -111,6 +111,14 @@ def portable_git_clone(destination: Path) -> None:
     if exclude.exists():
         exclude.write_text("# Local excludes belong to each clone.\n", encoding="utf-8")
 
+    # Clone populates the index with filesystem timestamps. Rebuild it directly
+    # from HEAD after all cleanliness checks so repeated Git-ready archives are
+    # byte-for-byte reproducible. The first status command after extraction may
+    # refresh stat data, but it remains clean because content and modes match.
+    index = destination / ".git" / "index"
+    index.unlink(missing_ok=True)
+    run(["git", "read-tree", "HEAD"], cwd=destination)
+
 
 def write_git_ready_archive(output: Path, *, root_name: str) -> Path:
     archive_path = output / f"{root_name}-git-ready.zip"

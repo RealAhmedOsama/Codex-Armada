@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import filecmp
 import json
 import os
 import platform
@@ -153,6 +154,7 @@ def write_results(path: Path, results: dict[str, object]) -> None:
         f"Wheel build/install smoke: {results['wheel_smoke']}",
         f"Source archive smoke: {results['source_archive_smoke']}",
         f"Git-ready archive smoke: {results['git_ready_archive_smoke']}",
+        f"Reproducible release artifacts: {results['reproducible_artifacts']}",
         f"Live upstream verification: {results['live_upstream']}",
         f"Duration seconds: {results['duration_seconds']}",
         "",
@@ -250,6 +252,31 @@ def main() -> int:
         verify_source_archive(source_archives[0], env)
         verify_git_ready_archive(git_archives[0])
 
+        rebuild_dir = artifact_dir / "release-rebuild"
+        rebuild = run(
+            [
+                sys.executable,
+                "scripts/build_release.py",
+                "--output-dir",
+                str(rebuild_dir),
+                "--wheel",
+                str(wheel),
+            ],
+            env=env,
+        )
+        require_success(rebuild, "release reproducibility rebuild")
+        first_files = {path.name: path for path in release_dir.iterdir() if path.is_file()}
+        second_files = {path.name: path for path in rebuild_dir.iterdir() if path.is_file()}
+        if first_files.keys() != second_files.keys():
+            raise VerificationError("Repeated release builds produced different artifact inventories")
+        nonreproducible = [
+            name
+            for name in sorted(first_files)
+            if not filecmp.cmp(first_files[name], second_files[name], shallow=False)
+        ]
+        if nonreproducible:
+            raise VerificationError(f"Repeated release builds differed: {nonreproducible}")
+
         version_result = run([sys.executable, "-m", "codex_armada", "version"], env=env)
         require_success(version_result, "source version")
         head = run(["git", "rev-parse", "HEAD"])
@@ -265,6 +292,7 @@ def main() -> int:
             "wheel_smoke": "passed",
             "source_archive_smoke": "passed",
             "git_ready_archive_smoke": "passed",
+            "reproducible_artifacts": "passed",
             "live_upstream": live_upstream,
             "duration_seconds": round(time.monotonic() - started, 3),
         }

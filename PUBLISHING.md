@@ -40,4 +40,6 @@ python scripts/build_release.py \
 - test-results summary;
 - commit-history text.
 
+`verify_release.py` builds the release twice and requires every produced artifact to match byte-for-byte.
+
 The runtime never publishes a release automatically. GitHub Actions release automation runs only from an explicitly pushed version tag.
