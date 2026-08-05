@@ -34,7 +34,7 @@ python scripts/build_release.py \
 
 - wheel;
 - source ZIP without `.git`;
-- Git-ready ZIP including logical history;
+- Git-ready ZIP including logical history and portable local Git mode settings so extraction remains clean across supported hosts;
 - SHA-256 checksum file;
 - release manifest;
 - test-results summary;

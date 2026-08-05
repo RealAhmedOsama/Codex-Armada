@@ -98,6 +98,10 @@ def write_source_archive(output: Path, *, root_name: str, files: list[Path]) -> 
 def portable_git_clone(destination: Path) -> None:
     run(["git", "clone", "--quiet", "--no-hardlinks", "--local", str(ROOT), str(destination)], cwd=ROOT.parent)
     run(["git", "remote", "remove", "origin"], cwd=destination)
+    # Standard ZIP extraction does not reliably restore POSIX executable bits.
+    # Keep the source repository's tracked modes intact while making the portable
+    # clone insensitive to extraction-time mode loss on every supported host.
+    run(["git", "config", "core.fileMode", "false"], cwd=destination)
     status = run(["git", "status", "--porcelain=v1"], cwd=destination)
     if status:
         raise ReleaseError("Portable Git clone is unexpectedly dirty:\n" + status)
