@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import compileall
 import json
 import os
 import re
@@ -190,9 +189,18 @@ def validate_runtime_boundaries() -> None:
 
 def run_checks() -> None:
     with tempfile.TemporaryDirectory(prefix="codex-armada-compile-") as temporary:
-        os.environ["PYTHONPYCACHEPREFIX"] = str(Path(temporary) / "pycache")
-        if not compileall.compile_dir(SRC, quiet=1, force=True):
-            fail("Python compilation failed")
+        compile_env = os.environ.copy()
+        compile_env["PYTHONPYCACHEPREFIX"] = str(Path(temporary) / "pycache")
+        completed = subprocess.run(
+            [sys.executable, "-m", "compileall", "-q", "-f", str(SRC)],
+            cwd=ROOT,
+            env=compile_env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            fail(completed.stderr.strip() or completed.stdout.strip() or "Python compilation failed")
     if shutil.which("sh"):
         for script in ("codex-armada.sh", "run-tests.sh"):
             completed = subprocess.run(["sh", "-n", str(ROOT / script)], text=True, capture_output=True, check=False)
