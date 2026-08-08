@@ -99,6 +99,9 @@ def clean_build_artifacts() -> None:
     for path in to_remove:
         if path.exists():
             shutil.rmtree(path)
+    for path in ROOT.rglob("__pycache__"):
+        if ".git" not in path.parts:
+            shutil.rmtree(path)
 
 
 def verify_installed_cli(install_dir: Path, env: dict[str, str]) -> None:
