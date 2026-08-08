@@ -45,5 +45,19 @@ class Console:
         if self.json_mode:
             print(json.dumps({"level": level, "message": message}, ensure_ascii=False), file=stream)
             return
-        icons = {"info": "ℹ", "success": "✓", "warning": "!", "error": "✗"}
-        print(f"{icons[level]} {message}", file=stream)
+        icons = {"info": "ℹ", "success": "✔", "warning": "!", "error": "✗"}
+        self._safe_print(f"{icons[level]} {message}", stream=stream)
+
+    @staticmethod
+    def _safe_print(message: str, *, stream: Any = sys.stdout) -> None:
+        encoding = getattr(stream, "encoding", None)
+        if not encoding:
+            print(message, file=stream)
+            return
+        try:
+            message.encode(encoding, errors="strict")
+            print(message, file=stream)
+        except UnicodeEncodeError:
+            fallback = message.encode(encoding, errors="backslashreplace").decode(encoding, errors="strict")
+            print(fallback, file=stream)
+

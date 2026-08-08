@@ -392,8 +392,9 @@ class LunaForgeManager:
             raise LunaForgeError(
                 f"Luna Forge version mismatch: expected {self.settings.required_version}, observed {version}"
             )
+        self._require_no_untracked_and_no_submodules(root)
 
-        manifest_entries = self._verify_manifest(root)
+        manifest_summary = self._verify_manifest(root)
         manifest_hash = sha256_file(root / SOURCE_MANIFEST)
         validator_hash = sha256_file(root / SOURCE_VALIDATE)
         validation_key = {
@@ -427,7 +428,9 @@ class LunaForgeManager:
                     "commit": commit,
                     "version": version,
                     "manifest_sha256": manifest_hash,
-                    "manifest_entries": manifest_entries,
+                    "manifest_entries": manifest_summary["entries"],
+                    "manifest_mode": manifest_summary["mode"],
+                    "manifest_unmanifested": manifest_summary["unmanifested"],
                     "validator_sha256": validator_hash,
                 }
             ),
@@ -454,10 +457,11 @@ class LunaForgeManager:
         temporary.write_text(json.dumps(payload, sort_keys=True) + "\n", encoding="utf-8")
         os.replace(temporary, marker)
 
-    def _verify_manifest(self, root: Path) -> int:
+    def _verify_manifest(self, root: Path) -> dict[str, Any]:
         entries = 0
         manifest_paths: set[str] = set()
-        for line_number, raw in enumerate((root / SOURCE_MANIFEST).read_text(encoding="utf-8").splitlines(), 1):
+        manifest_source = root / SOURCE_MANIFEST
+        for line_number, raw in enumerate(manifest_source.read_text(encoding="utf-8").splitlines(), 1):
             if not raw.strip():
                 continue
             parts = raw.split("  ", 1)
@@ -491,6 +495,20 @@ class LunaForgeManager:
         if entries == 0:
             raise LunaForgeError("Luna Forge manifest is empty")
 
+        try:
+            tracked_files = self._tracked_files(root)
+        except LunaForgeError:
+            tracked_files = {
+                path.relative_to(root).as_posix()
+                for path in root.rglob("*")
+                if path.is_file() and ".git" not in path.relative_to(root).parts
+            }
+        tracked_managed = {
+            path
+            for path in tracked_files
+            if path != SOURCE_MANIFEST.as_posix() and not path.startswith(f"{SOURCE_MANIFEST.as_posix()}/")
+        }
+
         actual_paths: set[str] = set()
         for candidate in root.rglob("*"):
             relative_path = candidate.relative_to(root)
@@ -503,13 +521,35 @@ class LunaForgeManager:
                 raise LunaForgeError(f"Untrusted symbolic link in Luna Forge source: {relative}")
             if candidate.is_file():
                 actual_paths.add(relative)
-        unmanifested = sorted(actual_paths - manifest_paths)
+        unmanifested = sorted(tracked_managed - manifest_paths)
         missing = sorted(manifest_paths - actual_paths)
+        mode = "complete"
         if unmanifested:
-            raise LunaForgeError(f"Unmanifested files in Luna Forge source: {unmanifested[:10]}")
+            mode = "package"
         if missing:
             raise LunaForgeError(f"Manifest paths missing from Luna Forge source: {missing[:10]}")
-        return entries
+        if mode == "complete":
+            return {"entries": entries, "mode": mode, "unmanifested": []}
+        return {"entries": entries, "mode": mode, "unmanifested": unmanifested}
+
+    def _tracked_files(self, root: Path) -> set[str]:
+        raw = self._git_output(["ls-files", "-z"], cwd=root)
+        if not raw:
+            return set()
+        files = {Path(item).as_posix() for item in raw.split("\u0000") if item}
+        return files
+
+    def _require_no_untracked_and_no_submodules(self, root: Path) -> None:
+        stage = self._git_output(["ls-files", "--stage"], cwd=root)
+        for line in stage.splitlines():
+            fields = line.split()
+            if len(fields) < 4:
+                continue
+            if fields[1] == "160000":
+                raise LunaForgeError(f"Unexpected submodule in Luna Forge checkout: {fields[3]}")
+        status = self._git_output(["status", "--porcelain=v1", "--untracked-files=all"], cwd=root)
+        if status.strip():
+            raise LunaForgeError("Cached Luna Forge checkout is modified or contains untracked files")
 
     def _validate_repository_url(self) -> None:
         value = self.settings.repository.strip()

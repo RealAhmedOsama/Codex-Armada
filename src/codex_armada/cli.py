@@ -38,6 +38,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--json", action="store_true", help="Emit machine-readable output where practical")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=__version__,
+        help="Print project version and exit",
+    )
 
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -142,11 +149,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     console = Console(json_mode=args.json, quiet=args.quiet)
     try:
+        if args.command == "wizard":
+            return _wizard(args, console)
         if args.command == "version":
             print(__version__)
             return 0
-        if args.command == "wizard":
-            return _wizard(args, console)
 
         repo = Path(args.repo).expanduser().resolve()
         if args.command == "init":

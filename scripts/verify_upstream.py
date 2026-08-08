@@ -9,14 +9,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
+sys.dont_write_bytecode = True
+os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
+os.environ.setdefault("PYTHONUTF8", "1")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 sys.path.insert(0, str(SRC))
 
 from codex_armada.config import load_config
 from codex_armada.luna_forge import LunaForgeManager
 
 
-def run(command: list[str], *, cwd: Path) -> None:
-    completed = subprocess.run(command, cwd=cwd, text=True, capture_output=True, check=False)
+def run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> None:
+    if command and os.path.basename(command[0]) == os.path.basename(sys.executable) and "-B" not in command:
+        command = [*command]
+        command.insert(1, "-B")
+    child_env = os.environ.copy()
+    if env:
+        child_env.update(env)
+    completed = subprocess.run(command, cwd=cwd, env=child_env, text=True, capture_output=True, check=False)
     if completed.returncode != 0:
         raise SystemExit(completed.stderr.strip() or completed.stdout.strip())
 
@@ -40,7 +50,7 @@ def main() -> int:
         installed = manager.ensure_project_install(repo)
         verified = manager.require_installed(repo)
         dirty = subprocess.run(
-            ["git", "status", "--porcelain"], cwd=repo, text=True, capture_output=True, check=True
+            ["git", "status", "--porcelain"], cwd=repo, text=True, capture_output=True, check=True, env=os.environ.copy()
         ).stdout.strip()
         if dirty:
             raise SystemExit(f"Project-local Luna Forge installation made the Git tree dirty: {dirty}")

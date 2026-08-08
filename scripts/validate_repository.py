@@ -191,8 +191,17 @@ def run_checks() -> None:
     with tempfile.TemporaryDirectory(prefix="codex-armada-compile-") as temporary:
         compile_env = os.environ.copy()
         compile_env["PYTHONPYCACHEPREFIX"] = str(Path(temporary) / "pycache")
+        compile_env["PYTHONDONTWRITEBYTECODE"] = "1"
+        compile_env["PYTHONUTF8"] = "1"
+        compile_env["PYTHONIOENCODING"] = "utf-8"
+        temporary_source = Path(temporary) / "source"
+        shutil.copytree(
+            SRC,
+            temporary_source,
+            ignore=shutil.ignore_patterns("__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"),
+        )
         completed = subprocess.run(
-            [sys.executable, "-m", "compileall", "-q", "-f", str(SRC)],
+            [sys.executable, "-B", "-m", "compileall", "-q", "-f", str(temporary_source)],
             cwd=ROOT,
             env=compile_env,
             text=True,
@@ -207,8 +216,9 @@ def run_checks() -> None:
             if completed.returncode != 0:
                 fail(f"Shell syntax failed for {script}: {completed.stderr}")
     completed = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "generate_metrics.py"), "--check"],
+        [sys.executable, "-B", str(ROOT / "scripts" / "generate_metrics.py"), "--check"],
         cwd=ROOT,
+        env=compile_env,
         text=True,
         capture_output=True,
         check=False,

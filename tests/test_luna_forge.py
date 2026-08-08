@@ -12,7 +12,7 @@ from codex_armada.git import GitRepository
 from codex_armada.luna_forge import LunaForgeManager
 from codex_armada.prompts import PromptBuilder
 from codex_armada.routing import Router
-from tests.helpers import create_fake_luna_forge, initialize_repo, write_test_config
+from tests.helpers import create_fake_luna_forge, initialize_repo, run, write_test_config
 
 
 class LunaForgeTests(unittest.TestCase):
@@ -120,6 +120,27 @@ class LunaForgeTests(unittest.TestCase):
         )
         with self.assertRaises(LunaForgeError):
             self.manager._verify_manifest(root)
+
+    def test_manifest_accepts_tracked_unmanifested_files_as_package_scoped(self) -> None:
+        verify_file = self.upstream / "VERIFY-GIT.cmd"
+        verify_file.write_text("echo verify git\n", encoding="utf-8")
+        run(["git", "add", "VERIFY-GIT.cmd"], cwd=self.upstream, check=True)
+        run(["git", "commit", "-q", "-m", "chore: add verify wrapper"], cwd=self.upstream, check=True)
+        commit = run(["git", "rev-parse", "HEAD"], cwd=self.upstream).stdout.strip().lower()
+        config_path = write_test_config(
+            self.root / "tracked-only.toml",
+            repository=self.upstream,
+            commit=commit,
+            cache_dir=self.root / "tracked-cache",
+        )
+        manager = LunaForgeManager(load_config(self.repo, config_path=config_path))
+        _, fetched = manager.fetch_source()
+        self.assertTrue(fetched)
+        manifest = manager._verify_manifest(self.upstream)
+        self.assertEqual("package", manifest["mode"])
+        self.assertIn("VERIFY-GIT.cmd", manifest["unmanifested"])
+        status = manager.inspect(self.repo)
+        self.assertTrue(status.source_valid)
 
     def test_route_and_prompt_record_upstream_provenance(self) -> None:
         task = TaskPlan(

@@ -26,10 +26,36 @@ class ProcessResult:
 
 
 def command_prefix(value: str) -> list[str]:
+    def strip_wrapping_quotes(token: str) -> str:
+        token = token.strip()
+        if len(token) >= 2 and token[0] == token[-1] and token[0] in {"'", '"'}:
+            return token[1:-1]
+        return token
+
     candidate = Path(value).expanduser()
     if candidate.exists():
         return [str(candidate.resolve())]
-    return shlex.split(value, posix=os.name != "nt")
+    try:
+        tokens = shlex.split(value, posix=(os.name != "nt"))
+    except ValueError:
+        tokens = shlex.split(value, posix=False)
+    tokens = [strip_wrapping_quotes(token) for token in tokens]
+    if not tokens:
+        return []
+    if os.name == "nt":
+        for length in range(len(tokens), 0, -1):
+            executable = " ".join(tokens[:length])
+            resolved = Path(executable).expanduser()
+            if not resolved.exists() or not resolved.is_file():
+                continue
+            remainder = [strip_wrapping_quotes(token) for token in tokens[length:]]
+            if remainder:
+                for trailing_length in range(len(remainder), 0, -1):
+                    argument = Path(" ".join(remainder[:trailing_length])).expanduser()
+                    if argument.exists() and argument.is_file():
+                        return [str(resolved.resolve()), str(argument.resolve()), *remainder[trailing_length:]]
+            return [str(resolved.resolve()), *remainder]
+    return [token for token in tokens if token]
 
 
 def run_process(
@@ -41,12 +67,19 @@ def run_process(
     env: Mapping[str, str] | None = None,
 ) -> ProcessResult:
     merged_env = os.environ.copy()
+    merged_env.setdefault("PYTHONUTF8", "1")
+    merged_env.setdefault("PYTHONIOENCODING", "utf-8")
+    merged_env.setdefault("PYTHONDONTWRITEBYTECODE", "1")
+    command = list(command)
+    if command and command[0] and os.path.basename(command[0]).lower() in {"python", "python.exe", "python3", "python3.exe"}:
+        if "-B" not in command:
+            command.insert(1, "-B")
     if env:
         merged_env.update(env)
     started = time.monotonic()
     try:
         completed = subprocess.run(
-            list(command),
+            command,
             cwd=str(cwd) if cwd else None,
             input=input_text,
             capture_output=True,

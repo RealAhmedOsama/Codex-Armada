@@ -30,7 +30,12 @@ def initialize_repo(path: Path) -> None:
     run(["git", "commit", "-q", "-m", "chore: initialize fixture"], cwd=path)
 
 
-def create_fake_luna_forge(path: Path, *, version: str = "2.2.1") -> tuple[Path, str]:
+def create_fake_luna_forge(
+    path: Path,
+    *,
+    version: str = "2.2.1",
+    additional_files: dict[str, str] | None = None,
+) -> tuple[Path, str]:
     """Create a clean, commit-pinned Luna Forge-compatible upstream fixture."""
 
     root = path.resolve()
@@ -151,7 +156,12 @@ if __name__ == '__main__':
         encoding="utf-8",
     )
 
-    _write_manifest(root)
+    if additional_files:
+        for relative, content in additional_files.items():
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+    _write_manifest(root, additional_files=additional_files)
     for command in (
         ["git", "init", "-q", "-b", "main"],
         ["git", "config", "user.name", "Luna Forge Fixture"],
@@ -221,13 +231,25 @@ def test_environment(project_root: Path, state_root: Path, cache_root: Path | No
     env["CODEX_HOME"] = str(state_root / "codex-home")
     if cache_root is not None:
         env["CODEX_ARMADA_CACHE_DIR"] = str(cache_root)
-    env["CODEX_ARMADA_CODEX_BINARY"] = f'{sys.executable} "{project_root / "tests" / "fake_codex.py"}"'
+    env["CODEX_ARMADA_CODEX_BINARY"] = f"{sys.executable} {project_root / 'tests' / 'fake_codex.py'}"
     return env
+
+
+def _write_manifest(root: Path, *, additional_files: dict[str, str] | None = None) -> None:
+    lines: list[str] = []
+    excluded = {path.strip("/") for path in (additional_files or {}).keys()}
+    for file in sorted(path for path in root.rglob("*") if path.is_file() and ".git" not in path.parts):
+        relative = file.relative_to(root).as_posix()
+        if relative in excluded or relative == "MANIFEST.sha256":
+            continue
+        digest = hashlib.sha256(file.read_bytes()).hexdigest()
+        lines.append(f"{digest}  {relative}")
+    (root / "MANIFEST.sha256").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def run_cli(project_root: Path, env: dict[str, str], *args: str, timeout: int = 120) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-m", "codex_armada", *args],
+        [sys.executable, "-B", "-m", "codex_armada", *args],
         cwd=project_root,
         env=env,
         capture_output=True,
@@ -237,14 +259,3 @@ def run_cli(project_root: Path, env: dict[str, str], *args: str, timeout: int = 
         check=False,
         timeout=timeout,
     )
-
-
-def _write_manifest(root: Path) -> None:
-    lines: list[str] = []
-    for file in sorted(path for path in root.rglob("*") if path.is_file() and ".git" not in path.parts):
-        relative = file.relative_to(root).as_posix()
-        if relative == "MANIFEST.sha256":
-            continue
-        digest = hashlib.sha256(file.read_bytes()).hexdigest()
-        lines.append(f"{digest}  {relative}")
-    (root / "MANIFEST.sha256").write_text("\n".join(lines) + "\n", encoding="utf-8")
