@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "reason", "findings", "residual_risk"],
+  "properties": {
+    "verdict": {"enum": ["ship", "fix-first", "rethink"]},
+    "reason": {"type": "string"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "path", "description", "required_fix"],
+        "properties": {
+          "severity": {"enum": ["low", "medium", "high", "critical"]},
+          "path": {"type": "string"},
+          "description": {"type": "string"},
+          "required_fix": {"type": "string"}
+        }
+      }
+    },
+    "residual_risk": {"type": "string"}
+  }
+}

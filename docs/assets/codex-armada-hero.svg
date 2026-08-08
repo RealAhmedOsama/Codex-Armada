@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="620" viewBox="0 0 1600 620" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Armada</title>
+  <desc id="desc">Evidence-driven, cost-aware orchestration for Codex CLI</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.55" stop-color="#102a43"/>
+      <stop offset="1" stop-color="#22104b"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="0.5" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#c084fc"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="50%" cy="45%" r="55%">
+      <stop offset="0" stop-color="#f8fafc" stop-opacity="0.98"/>
+      <stop offset="0.18" stop-color="#93c5fd" stop-opacity="0.9"/>
+      <stop offset="0.52" stop-color="#8b5cf6" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#0f172a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" fill="none" stroke="#93c5fd" stroke-opacity="0.08" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="620" rx="36" fill="url(#bg)"/>
+  <rect width="1600" height="620" rx="36" fill="url(#grid)"/>
+  <circle cx="1290" cy="150" r="260" fill="#7c3aed" opacity="0.13" filter="url(#shadow)"/>
+  <circle cx="250" cy="560" r="300" fill="#14b8a6" opacity="0.09" filter="url(#shadow)"/>
+
+  <g transform="translate(1050 85)">
+    <circle cx="230" cy="230" r="192" fill="none" stroke="#94a3b8" stroke-opacity="0.22" stroke-width="2"/>
+    <circle cx="230" cy="230" r="128" fill="none" stroke="#60a5fa" stroke-opacity="0.38" stroke-width="2" stroke-dasharray="10 12"/>
+    <circle cx="230" cy="230" r="86" fill="url(#orb)"/>
+    <path d="M82 230c86-72 210-72 296 0-86 72-210 72-296 0Z" fill="none" stroke="url(#glow)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M230 82c72 86 72 210 0 296-72-86-72-210 0-296Z" fill="none" stroke="url(#glow)" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+    <g fill="#f8fafc">
+      <circle cx="82" cy="230" r="9"/>
+      <circle cx="378" cy="230" r="9"/>
+      <circle cx="230" cy="82" r="9"/>
+      <circle cx="230" cy="378" r="9"/>
+    </g>
+    <g font-family="Inter,Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" text-anchor="middle">
+      <text x="82" y="205" fill="#5eead4">LUNA</text>
+      <text x="378" y="205" fill="#c084fc">SOL</text>
+      <text x="230" y="56" fill="#60a5fa">TERRA</text>
+      <text x="230" y="426" fill="#cbd5e1">PROOF</text>
+    </g>
+  </g>
+
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <text x="105" y="175" fill="#94a3b8" font-size="28" font-weight="700" letter-spacing="7">CODEX ORCHESTRATION CONTROL PLANE</text>
+    <text x="98" y="300" fill="#f8fafc" font-size="102" font-weight="850" letter-spacing="-5">Codex Armada</text>
+    <rect x="104" y="330" width="785" height="7" rx="3.5" fill="url(#glow)"/>
+    <text x="105" y="402" fill="#dbeafe" font-size="36" font-weight="600">Route by risk. Execute by contract. Accept by evidence.</text>
+    <text x="105" y="465" fill="#a8b8ce" font-size="27">Sol plans · Luna Forge and Terra implement · deterministic gates decide</text>
+    <g transform="translate(105 515)" font-size="20" font-weight="700">
+      <rect width="190" height="48" rx="24" fill="#0f766e" fill-opacity="0.55" stroke="#5eead4" stroke-opacity="0.7"/>
+      <text x="95" y="31" text-anchor="middle" fill="#ccfbf1">ZERO RUNTIME DEPS</text>
+      <rect x="210" width="180" height="48" rx="24" fill="#1d4ed8" fill-opacity="0.45" stroke="#60a5fa" stroke-opacity="0.75"/>
+      <text x="300" y="31" text-anchor="middle" fill="#dbeafe">PINNED UPSTREAM</text>
+      <rect x="410" width="175" height="48" rx="24" fill="#6d28d9" fill-opacity="0.42" stroke="#c084fc" stroke-opacity="0.75"/>
+      <text x="497" y="31" text-anchor="middle" fill="#f3e8ff">NO AUTO-PUSH</text>
+    </g>
+  </g>
+</svg>

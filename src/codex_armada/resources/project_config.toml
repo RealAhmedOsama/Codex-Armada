@@ -1,0 +1,15 @@
+version = 1
+profile = "balanced"
+language = "en"
+report_language = "en"
+
+# This file overlays Codex Armada's safe packaged defaults.
+# Uncomment only values you intentionally want to change.
+# default_budget_credits = 250.0
+# commit_per_task = true
+# use_isolated_worktrees = true
+# attestation_required_from = "critical"
+
+# Luna Forge is fetched directly from the pinned upstream Git commit defined by
+# the packaged defaults. Override the source only after reviewing and pinning a
+# full 40-character commit SHA.

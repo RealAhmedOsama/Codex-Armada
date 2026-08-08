@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+import uuid
+from pathlib import Path
+
+
+def value_after(args: list[str], flag: str, default: str = "") -> str:
+    try:
+        return args[args.index(flag) + 1]
+    except (ValueError, IndexError):
+        return default
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if args == ["--version"]:
+        print("codex-cli 99.0.0-fake")
+        return 0
+    if args == ["--help"]:
+        print("Usage: codex [--config] [--ignore-user-config] <command>")
+        return 0
+    if args[:2] == ["exec", "--help"] or args == ["exec", "--help"]:
+        print(
+            "Usage: codex exec --json --model MODEL --sandbox MODE --cd DIR "
+            "--output-schema FILE --output-last-message FILE --skip-git-repo-check "
+            "--ignore-user-config --ephemeral"
+        )
+        return 0
+    if args[:3] == ["debug", "models", "--json"]:
+        print(json.dumps({"models": [{"id": "gpt-5.6-luna"}, {"id": "gpt-5.6-terra"}, {"id": "gpt-5.6-sol"}]}))
+        return 0
+    if not args or args[0] != "exec":
+        print("unsupported fake command", file=sys.stderr)
+        return 2
+
+    model = value_after(args, "--model", "gpt-5.6-sol")
+    sandbox = value_after(args, "--sandbox", "workspace-write")
+    cwd = Path(value_after(args, "--cd", ".")).resolve()
+    output = Path(value_after(args, "--output-last-message"))
+    effort = "medium"
+    for index, item in enumerate(args):
+        if item == "-c" and index + 1 < len(args):
+            match = re.search(r'model_reasoning_effort="([^"]+)"', args[index + 1])
+            if match:
+                effort = match.group(1)
+    prompt = sys.stdin.read()
+
+    capture = os.environ.get("FAKE_CODEX_CAPTURE_PROMPTS")
+    if capture:
+        capture_path = Path(capture)
+        capture_path.parent.mkdir(parents=True, exist_ok=True)
+        with capture_path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({
+                "model": model,
+                "effort": effort,
+                "sandbox": sandbox,
+                "cwd": str(cwd),
+                "prompt": prompt,
+            }, ensure_ascii=False) + "\n")
+
+    if os.environ.get("FAKE_CODEX_FORGE_MUTATION") == "1" and "$luna-forge" in prompt:
+        forge_skill = cwd / ".agents" / "skills" / "luna-forge" / "SKILL.md"
+        if forge_skill.is_file():
+            forge_skill.write_text(forge_skill.read_text(encoding="utf-8") + "\n# unauthorized mutation\n", encoding="utf-8")
+
+    if "planning architect" in prompt:
+        response = {
+            "goal": _extract_goal(prompt),
+            "summary": "Create one bounded file with deterministic verification.",
+            "assumptions": [],
+            "tasks": [
+                {
+                    "id": "create-file",
+                    "title": "Create generated file",
+                    "objective": "Create generated.txt with the expected content.",
+                    "kind": "implementation",
+                    "owned_paths": ["generated.txt"],
+                    "excluded_paths": [],
+                    "interfaces": [],
+                    "constraints": ["Do not modify any other file."],
+                    "verification": [
+                        {"command": "git diff --check", "success": "exit code 0", "timeout_seconds": None}
+                    ],
+                    "depends_on": [],
+                    "risk": "medium",
+                    "tags": ["generated"],
+                    "allow_deletions": False,
+                    "allow_production_changes": False,
+                    "commit_message": "feat(generated): create generated file"
+                }
+            ],
+            "acceptance_criteria": ["generated.txt exists and is committed"]
+        }
+    elif "commitment-boundary plan reviewer" in prompt:
+        response = {"verdict": "proceed", "reason": "Plan is bounded.", "findings": [], "largest_risk": "none"}
+    elif "fresh final diff reviewer" in prompt:
+        if os.environ.get("FAKE_CODEX_REVIEW_MUTATION") == "1":
+            (cwd / "reviewer-mutated.txt").write_text("bad\n", encoding="utf-8")
+        response = {"verdict": "ship", "reason": "Diff and evidence are valid.", "findings": [], "residual_risk": "none"}
+    elif "disposable Codex routing canary" in prompt:
+        (cwd / "canary.txt").write_text("Codex Armada canary OK\n", encoding="utf-8")
+        response = {"status": "ok", "message": "Canary file created."}
+    elif "Read-only model capability probe" in prompt:
+        response = {"status": "ok", "message": "Model probe passed."}
+    elif "bounded implementation worker" in prompt:
+        owned = _first_owned_path(prompt)
+        target = cwd / owned
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if os.environ.get("FAKE_CODEX_SYMLINK") == "1":
+            os.symlink("README.md", target)
+        else:
+            target.write_text(f"Generated by Codex Armada for {owned}\n", encoding="utf-8")
+        if os.environ.get("FAKE_CODEX_SCOPE_VIOLATION") == "1":
+            (cwd / "outside.txt").write_text("outside scope\n", encoding="utf-8")
+        response = {
+            "status": "complete",
+            "objective": f"Create {owned}",
+            "changes": [{"path": owned, "summary": "Created deterministic fixture."}],
+            "verified": [{"command": "git diff --check", "result": "ready for parent verification"}],
+            "judgment_calls": [],
+            "gaps": []
+        }
+    else:
+        response = {"status": "blocked", "message": "Unknown fake prompt."}
+
+    if os.environ.get("FAKE_CODEX_INVALID_SCHEMA") == "1":
+        response = {"unexpected": True}
+
+    thread = str(uuid.uuid4())
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(response), encoding="utf-8")
+    _write_rollout(
+        thread_id=thread,
+        model=os.environ.get("FAKE_CODEX_OBSERVED_MODEL", model),
+        effort=effort,
+        sandbox=sandbox,
+        cwd=cwd,
+    )
+    print(json.dumps({"type": "thread.started", "thread_id": thread}))
+    print(
+        json.dumps(
+            {
+                "type": "turn.completed",
+                "usage": {
+                    "input_tokens": 1200,
+                    "cached_input_tokens": 200,
+                    "cache_write_input_tokens": 0,
+                    "output_tokens": 300,
+                    "reasoning_output_tokens": 120,
+                },
+            }
+        )
+    )
+    return 0
+
+
+def _extract_goal(prompt: str) -> str:
+    match = re.search(r"GOAL\n(.*?)\n\nREPOSITORY", prompt, flags=re.DOTALL)
+    return match.group(1).strip() if match else "Complete the goal"
+
+
+def _first_owned_path(prompt: str) -> str:
+    match = re.search(r'"owned_paths"\s*:\s*\[\s*"([^"]+)"', prompt)
+    if not match:
+        return "generated.txt"
+    value = match.group(1)
+    if any(token in value for token in "*?["):
+        return "generated.txt"
+    return value
+
+
+def _write_rollout(*, thread_id: str, model: str, effort: str, sandbox: str, cwd: Path) -> None:
+    """Write the runtime fields where current Codex rollouts expose them."""
+
+    codex_home = os.environ.get("CODEX_HOME")
+    if not codex_home:
+        return
+    directory = Path(codex_home) / "sessions" / "2099" / "01" / "01"
+    directory.mkdir(parents=True, exist_ok=True)
+    rollout = directory / f"rollout-2099-01-01T00-00-00-{thread_id}.jsonl"
+    records = [
+        {
+            "type": "session_meta",
+            "payload": {
+                "id": thread_id,
+                "model_provider": "openai",
+                "cwd": str(cwd),
+            },
+        },
+        {
+            "type": "turn_context",
+            "payload": {
+                "model": model,
+                "effort": effort,
+                "sandbox_policy": {"type": sandbox},
+                "permission_profile": {"type": "test-profile"},
+                "cwd": str(cwd),
+            },
+        },
+    ]
+    rollout.write_text(
+        "".join(json.dumps(record) + "\n" for record in records),
+        encoding="utf-8",
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

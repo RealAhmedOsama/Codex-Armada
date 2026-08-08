@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+
+      - name: Validate repository
+        run: python scripts/validate_repository.py
+
+      - name: Build release artifacts
+        shell: bash
+        run: |
+          python -m pip wheel . --no-deps --wheel-dir "${RUNNER_TEMP}/wheel"
+          wheel="$(find "${RUNNER_TEMP}/wheel" -maxdepth 1 -name '*.whl' -print -quit)"
+          python scripts/build_release.py --output-dir dist --wheel "${wheel}" --no-git-ready
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --verify-tag --generate-notes --title "Codex Armada ${GITHUB_REF_NAME}"

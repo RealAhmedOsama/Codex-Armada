@@ -1,0 +1,10 @@
+include README.md LICENSE CHANGELOG.md SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md
+include SUPPORT.md PUBLISHING.md ROADMAP.md THIRD_PARTY_NOTICES.md CITATION.cff AGENTS.md
+include .editorconfig .gitattributes
+recursive-include src/codex_armada/resources *.toml *.json *.md
+include src/codex_armada/py.typed
+recursive-include docs *.md *.json *.csv *.svg
+recursive-include examples *.toml *.json
+recursive-include scripts *.py *.sh *.ps1
+recursive-include tests *.py
+recursive-include .github *.yml *.yaml *.md
